@@ -194,7 +194,7 @@ git checkout -b feature/phase1-foundation
 - `main` - Production ready code
 - `develop` - Integration branch
 - `feature/*` - Individual features
-- `module/*` - Training module branches (for students to checkout)
+- `module/*` - Trainin g module branches (for students to checkout)
 
 ---
 
