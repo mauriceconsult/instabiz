@@ -52,7 +52,7 @@ model VerificationToken {
 model Shop {
   id          String     @id @default(cuid())
   name        String
-  slug        String     @unique
+  slug        String?     @unique
   description String?    @db.Text
   logo        String?
   banner      String?
