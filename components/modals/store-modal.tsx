@@ -38,13 +38,11 @@ export const StoreModal = () => {
       setLoading(true);
 
       // Create the shop
-      const response = await axios.post("/api/shops", values);
-      const shop = response.data;
+      const response = await axios.post("/api/shops", values);     
 
       toast.success("Store created!");
-
-      // ✅ Redirect to the new shop dashboard
-      window.location.assign(`/${shop.id}`);
+    
+      window.location.assign(`/${response.data.id}`);
     } catch {
       toast.error("Something went wrong.");
     } finally {
