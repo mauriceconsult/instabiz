@@ -12,10 +12,6 @@ useEffect(() => {
     onOpen();
   }
 }, [isOpen, onOpen]);
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Setup Page</h1>
-    </div>   
-  );
+  return null;
 }
 export default SetupPage;

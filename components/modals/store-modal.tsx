@@ -15,10 +15,11 @@ import {
 } from "../ui/form";
 import { Button } from "../ui/button";
 import { useState } from "react";
+import axios from "axios";
 import toast from "react-hot-toast";
 
 const formSchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().min(1, "Name is required").max(255),
 });
 
 export const StoreModal = () => {
@@ -32,20 +33,25 @@ export const StoreModal = () => {
     },
   });
 
-  // ✅ onSubmit is its own function - closed before return
-  const onSubmit = async () => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
+
+      // Create the shop
+      const response = await axios.post("/api/shops", values);
+      const shop = response.data;
+
       toast.success("Store created!");
-      storeModal.onClose();
+
+      // ✅ Redirect to the new shop dashboard
+      window.location.assign(`/${shop.id}`);
     } catch {
       toast.error("Something went wrong.");
     } finally {
       setLoading(false);
     }
-  }; // ✅ Closes here
+  };
 
-  // ✅ return is part of the component, not inside onSubmit
   return (
     <Modal
       title="Create Store"
@@ -79,6 +85,7 @@ export const StoreModal = () => {
                 disabled={loading}
                 variant="outline"
                 onClick={storeModal.onClose}
+                type="button"
               >
                 Cancel
               </Button>
