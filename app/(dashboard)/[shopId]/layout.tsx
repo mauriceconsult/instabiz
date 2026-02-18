@@ -10,23 +10,24 @@ export default async function DashboardLayout({
   params: Promise<{ shopId: string }>;
 }) {
   const { userId } = await auth();
+
   if (!userId) {
     redirect("/sign-in");
-  }
-  const { shopId } = await params;
+  }  
 
+  // ✅ Simplified - findUnique by id, check userId
   const shop = await prisma.shop.findFirst({
-    where: {
-      id: shopId,
-      ownerId: userId,
-    },
+    where: { id: (await params).shopId, userId },
   });
+
+  // ✅ Check ownership using Clerk userId
   if (!shop) {
     redirect("/");
   }
+
   return (
     <>
-      <div>This is navbar</div>
+      <div>This will be navbar</div>
       {children}
     </>
   );

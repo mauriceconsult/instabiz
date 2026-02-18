@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/sync-clerk-user";
 
 export async function POST(req: Request) {
   try {
@@ -17,17 +16,14 @@ export async function POST(req: Request) {
       return new NextResponse("Name is required", { status: 400 });
     }
 
-    const user = await getCurrentUser(userId);
-
+    // ✅ Simplified - no getCurrentUser needed, use Clerk userId directly
     const shop = await prisma.shop.create({
       data: {
         name,
-        slug: name.toLowerCase().replace(/\s+/g, "-"),
-        ownerId: user.id,
+        userId, // ✅ Now stores Clerk userId directly
       },
     });
 
-    // ✅ Just return the shop data - NO redirect here!
     return NextResponse.json(shop);
   } catch (error) {
     console.log("[SHOP_POST]", error);
