@@ -1,7 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { AlertModal } from "@/components/modals/alert-modal";
-import { ApiAlert } from "@/components/ui/api-alert";
+// import { ApiAlert } from "@/components/ui/api-alert";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -23,24 +24,35 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import * as z from "zod";
+import { useOrigin } from "@/hooks/use-origin"; // ✅ Add this hook
 
 interface SettingsFormProps {
   initialData: Shop;
 }
+
+const ApiAlert = dynamic(
+  () => import("@/components/ui/api-alert").then((mod) => mod.ApiAlert),
+  { ssr: false },
+);
+
 const formSchema = z.object({
   name: z.string().min(1).max(255),
 });
+
 type SettingsFormValues = z.infer<typeof formSchema>;
 
 export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
   const params = useParams();
   const router = useRouter();
+  const origin = useOrigin(); // ✅ Use the hook
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData,
   });
+
   const onSubmit = async (data: SettingsFormValues) => {
     try {
       setLoading(true);
@@ -53,7 +65,8 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
       setLoading(false);
     }
   };
-  const onDelete = async () => { 
+
+  const onDelete = async () => {
     try {
       setLoading(true);
       await axios.delete(`/api/shops/${params.shopId}`);
@@ -66,7 +79,8 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
       setLoading(false);
       setOpen(false);
     }
-  }
+  };
+
   return (
     <>
       <AlertModal
@@ -80,7 +94,7 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
         <Button
           disabled={loading}
           variant="destructive"
-          size={"sm"}
+          size="sm"
           onClick={() => setOpen(true)}
         >
           <Trash className="h-4 w-4" />
@@ -120,7 +134,8 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
       <ApiAlert
         title="NEXT_PUBLIC_API_URL"
         description={`${origin}/api/${params.shopId}`}
-        variant="public" />
+        variant="public"
+      />
     </>
   );
 };
