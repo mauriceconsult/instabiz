@@ -54,7 +54,7 @@ export default function ShopSwitcher({
           role="combobox"
           aria-expanded={open}
           aria-label="Select a shop"
-          className={cn("w-50 justify-between", className)}
+          className={cn("w-50 justify-between", className)}          
         >
           <Store className="mr-2 h-4 w-4" />
           {currentShop?.label || "Select a shop"}
