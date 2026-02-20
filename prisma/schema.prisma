@@ -4,16 +4,29 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  
 }
 
 model Shop {
-  id          String     @id @default(uuid())
+  id          String      @id @default(uuid())
   userId      String
   name        String 
+  billboards  Billboard[] @relation("ShopToBillboard")
   
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
+  @@index([userId])
 }
 
+model Billboard {
+  id          String   @id @default(uuid())
+  shopId      String
+  shop        Shop     @relation("ShopToBillboard", fields: [shopId], references: [id])
+  label       String 
+  imageUrl    String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shopId])
+}
