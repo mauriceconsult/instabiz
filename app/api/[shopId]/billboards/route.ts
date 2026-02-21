@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ shopId: string }> }, // ✅ Promise
+  { params }: { params: Promise<{ shopId: string }> }, 
 ) {
   try {
     const { userId } = await auth();
@@ -23,15 +23,13 @@ export async function POST(
       return new NextResponse("Image Url is required", { status: 400 });
     }
 
-    const { shopId } = await params; // ✅ Await params
-
-    if (!shopId) {
+    if (!(await params).shopId) {
       return new NextResponse("Shop Id is required", { status: 400 });
     }
 
     const shopByUserId = await prisma.shop.findFirst({
       where: {
-        id: shopId, // ✅ Use awaited value
+        id: (await params).shopId, 
         userId,
       },
     });
@@ -44,7 +42,7 @@ export async function POST(
       data: {
         label,
         imageUrl,
-        shopId, // ✅ Use awaited value
+        shopId: (await params).shopId, 
       },
     });
 
@@ -57,10 +55,10 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ shopId: string }> }, // ✅ Promise
+  { params }: { params: Promise<{ shopId: string }> },
 ) {
   try {
-    const { shopId } = await params; // ✅ Await params
+    const { shopId } = await params; 
 
     if (!shopId) {
       return new NextResponse("Shop Id is required", { status: 400 });
@@ -68,7 +66,7 @@ export async function GET(
 
     const billboards = await prisma.billboard.findMany({
       where: {
-        shopId, // ✅ Use awaited value
+        shopId: (await params).shopId
       },
     });
 

@@ -24,7 +24,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import * as z from "zod";
-// import { useOrigin } from "@/hooks/use-origin"; 
+
 
 const formSchema = z.object({  
   label: z.string().min(1).max(255),
@@ -37,18 +37,13 @@ interface BillboardFormProps {
 
 type BillboardFormValues = z.infer<typeof formSchema>;
 
-// const ApiAlert = dynamic(
-//   () => import("@/components/ui/api-alert").then((mod) => mod.ApiAlert),
-//   { ssr: false },
-// );
+
 
 export const BillboardForm: React.FC<BillboardFormProps> = ({ initialData }) => {
   const params = useParams();
-  const router = useRouter();
-  // const origin = useOrigin(); 
+  const router = useRouter();  
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const title = initialData ? "Edit billboard" : "Create billboard";
   const description = initialData ? "Edit a billboard" : "Add a new billboard";
   const toastMessage = initialData ? "Billboard updated" : "Billboard created";
@@ -135,9 +130,7 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({ initialData }) => 
                     disabled={loading}
                     onChange={(url) => field.onChange(url)}
                     onRemove={() => field.onChange("")}
-                    // info={{
-                    //   secure_url: ""
-                    // }}                                    
+                                                   
                   />
                 </FormControl>
                 <FormMessage />

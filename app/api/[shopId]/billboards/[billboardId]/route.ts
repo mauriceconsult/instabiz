@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ billboardId: string }> }, // ✅ Promise
+  { params }: { params: Promise<{ billboardId: string }> },
 ) {
   try {
     if (!(await params).billboardId) {
@@ -26,7 +26,12 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ shopId: string; billboardId: string }> }, // ✅ Promise!
+  { params }: {
+    params: Promise<{
+      shopId: string;
+      billboardId: string
+    }>
+  },
 ) {
   try {
     const { userId } = await auth();
@@ -44,20 +49,17 @@ export async function PATCH(
       return new NextResponse("Image URL is required", { status: 400 });
     }
 
-    const { shopId, billboardId } = await params; // ✅ Await params first!
-
-    if (!shopId || !billboardId) {
-      return new NextResponse("Shop ID and BillboardId required", {
-        status: 400,
-      });
-    }
+    if (!(await params).billboardId) {
+        return new NextResponse("Billboard Id is required", { status: 400 });
+    }   
 
     const storeByUser = await prisma.shop.findFirst({
       where: {
         id: (await params).shopId,
+        userId
       },
     });
-    if (storeByUser) {
+    if (!storeByUser) {
       return new NextResponse("Unathorized", {
         status: 403,
       });
@@ -81,7 +83,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ billboardId: string; shopId: string }> }, // ✅ Promise
+  { params }: { params: Promise<{ billboardId: string; shopId: string }> }, 
 ) {
   try {
     const { userId } = await auth();
@@ -90,17 +92,15 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { billboardId } = await params; // ✅ Await it
-
-    if (!billboardId) {
-      return new NextResponse("Billboard ID is required", { status: 400 });
+    if (!(await params).billboardId) {
+      return new NextResponse("Billboard Id is required", { status: 400 });
     }
     const storeByUser = await prisma.shop.findFirst({
       where: {
         id: (await params).shopId,
       },
     });
-    if (storeByUser) {
+    if (!storeByUser) {
       return new NextResponse("Unathorized", {
         status: 403,
       });
