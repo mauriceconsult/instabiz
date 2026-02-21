@@ -5,14 +5,14 @@ import { format } from "date-fns";
 
 const BillboardsPage = async ({
     params
-}: {params: { shopId: string; }}) => {
+}: {params: Promise<{ shopId: string; }>}) => {
     const billboards = await prisma.billboard.findMany({
-        where: {
-            shopId: params.shopId
-        },
-        orderBy: {
-            createdAt: "desc"
-        }
+      where: {
+        shopId: (await params).shopId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
     const formattedBillboards: BillboardColumn[] = billboards.map((item) => ({
         id: item.id,
