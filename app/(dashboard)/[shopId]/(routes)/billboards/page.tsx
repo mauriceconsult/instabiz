@@ -1,13 +1,31 @@
+import { prisma } from "@/lib/prisma";
 import { BillboardClient } from "./components/client";
+import { BillboardColumn } from "./components/columns";
+import { format } from "date-fns";
 
-const BillboardsPage = () => {
-    return ( 
-        <div className="flex-col">
-            <div className="flex-1 space-y-4 p-8 pt-6">
-                <BillboardClient data={[]} />
-            </div>
+const BillboardsPage = async ({
+    params
+}: {params: { shopId: string; }}) => {
+    const billboards = await prisma.billboard.findMany({
+        where: {
+            shopId: params.shopId
+        },
+        orderBy: {
+            createdAt: "desc"
+        }
+    });
+    const formattedBillboards: BillboardColumn[] = billboards.map((item) => ({
+        id: item.id,
+        label: item.label,
+        createdAt: format(item.createdAt, "MMMM do, yyyy")
+    }))
+    return (
+      <div className="flex-col">
+        <div className="flex-1 space-y-4 p-8 pt-6">
+          <BillboardClient data={formattedBillboards} />
         </div>
-     );
+      </div>
+    );
 }
  
 export default BillboardsPage;
