@@ -7,16 +7,15 @@ import { Plus } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { BillboardColumn, columns } from "./columns";
 import { DataTable } from "@/components/ui/data-table";
+import { ApiList } from "@/components/ui/api-list";
 
 interface BillboardClientProps {
-  data: BillboardColumn[]
+  data: BillboardColumn[];
 }
 
-export const BillboardClient: React.FC<BillboardClientProps> = ({
-  data
-}) => {
-    const router = useRouter();
-    const params = useParams();
+export const BillboardClient: React.FC<BillboardClientProps> = ({ data }) => {
+  const router = useRouter();
+  const params = useParams();
   return (
     <>
       <div className="flex items-center justify-between">
@@ -31,6 +30,9 @@ export const BillboardClient: React.FC<BillboardClientProps> = ({
       </div>
       <Separator />
       <DataTable columns={columns} data={data} searchKey={"label"} />
+      <Heading title="API" description="API calls for billboard" />
+      <Separator />
+      <ApiList entityName="billboards" entityIdName="billboardId" />
     </>
   );
 };

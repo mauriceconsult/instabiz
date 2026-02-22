@@ -160,8 +160,7 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({ initialData }) => 
             {action}
           </Button>
         </form>
-      </Form>
-      <Separator />
+      </Form>      
     </>
   );
 };
