@@ -69,7 +69,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ initialData, billboa
       }
       toast.success(toastMessage);
       router.refresh();
-      router.push(`/api/${params.shopId}/categories`)
+      router.push(`/${params.shopId}/categories`)
     } catch {
       toast.error("Something went wrong");
     } finally {
