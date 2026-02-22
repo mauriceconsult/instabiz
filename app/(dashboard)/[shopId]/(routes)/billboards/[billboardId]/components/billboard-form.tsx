@@ -68,7 +68,7 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({ initialData }) => 
       }
       toast.success(toastMessage);
       router.refresh();
-      router.push(`/${params.shopId}/billboards`)
+      router.push(`/api/${params.shopId}/billboards`)
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -82,7 +82,7 @@ export const BillboardForm: React.FC<BillboardFormProps> = ({ initialData }) => 
       await axios.delete(`/api/${params.shopId}/billboards/${params.billboardId}`);
       toast.success("Billboard deleted successfully");
       router.refresh();
-      router.push("/");
+      router.push(`/${params.shopId}/billboards`);
     } catch {
       toast.error("Make sure you removed all categories in this billboard first");
     } finally {
