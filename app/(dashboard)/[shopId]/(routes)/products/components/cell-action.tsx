@@ -7,7 +7,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ColorColumn } from "./columns";
+import { ProductColumn } from "./columns";
 import { Button } from "@/components/ui/button";
 import { Copy, Edit, MoreHorizontal, Trash } from "lucide-react";
 import toast from "react-hot-toast";
@@ -17,32 +17,37 @@ import axios from "axios";
 import { AlertModal } from "@/components/modals/alert-modal";
 
 interface CellActionProps {
-  data: ColorColumn;
+  data: ProductColumn;
 }
 
 export const CellAction: React.FC<CellActionProps> = ({ data }) => {
-  const router = useRouter();
+    const router = useRouter();
   const params = useParams();
   const [loading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const onCopy = (id: string) => {
-    navigator.clipboard.writeText(id);
-    toast.success("Color Id Route Copied to Clipboard");
+      const onCopy = (id: string) => {
+        navigator.clipboard.writeText(id);
+        toast.success("Product Id Route Copied to Clipboard");
   };
-
-  const onDelete = async () => {
-    try {
-      setIsLoading(true);
-      await axios.delete(`/api/${params.shopId}/colors/${data.id}`);
-      toast.success("Color deleted successfully");
-      router.refresh();
-    } catch {
-      toast.error("Make sure you removed all products in this color first");
-    } finally {
-      setIsLoading(false);
-      setOpen(false);
-    }
-  };
+  
+    const onDelete = async () => {
+      try {
+        setIsLoading(true);
+        await axios.delete(
+          `/api/${params.shopId}/products/${data.id}`,
+        );
+        toast.success("Product deleted successfully");
+        router.refresh();
+        
+      } catch {
+        toast.error(
+          "Make sure you removed all categories in this product first",
+        );
+      } finally {
+        setIsLoading(false);
+        setOpen(false);
+      }
+    };
 
   return (
     <>
@@ -66,7 +71,9 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             Copy Id
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => router.push(`/${params.shopId}/colors/${data.id}`)}
+            onClick={() =>
+              router.push(`/${params.shopId}/products/${data.id}`)
+            }
           >
             <Edit className="mr-2 h-4 w-4" />
             Update
