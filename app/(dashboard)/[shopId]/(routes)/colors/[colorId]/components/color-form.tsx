@@ -25,8 +25,7 @@ import * as z from "zod";
 
 const formSchema = z.object({
   name: z.string().min(1).max(255),
-  value: z.string().min(4).regex(/^#/), 
-    message: "String must be a valid hex code"  
+  value: z.string().min(4).regex(/^#/, "String must be a valid hex code"),
 });
 
 interface ColorFormProps {
