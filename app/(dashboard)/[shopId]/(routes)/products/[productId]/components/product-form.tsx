@@ -209,6 +209,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                       disabled={loading}
                       placeholder="9.99"
                       {...field}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
                     />
                   </FormControl>
                   <FormMessage />

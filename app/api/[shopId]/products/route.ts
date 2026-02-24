@@ -4,12 +4,14 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ shopId: string }> }, 
+  { params }: { params: Promise<{ shopId: string }> },
 ) {
   try {
     const { userId } = await auth();
+    const { shopId } = await params; 
+
     const body = await req.json();
-    const { 
+    const {
       name,
       price,
       categoryId,
@@ -17,47 +19,29 @@ export async function POST(
       sizeId,
       images,
       isFeatured,
-      isArchived
+      isArchived,
     } = body;
 
-    if (!userId) {
-      return new NextResponse("Unauthenticated", { status: 401 });
-    }
-
-    if (!name) {
-      return new NextResponse("Name is required", { status: 400 });
-    }
-    if (!images || !images.length) {
+    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
+    if (!name) return new NextResponse("Name is required", { status: 400 });
+    if (!images || !images.length)
       return new NextResponse("Images are required", { status: 400 });
-    }
-
-    if (!price) {
+    if (price === undefined || price === null)
       return new NextResponse("Price is required", { status: 400 });
-    }
-    if (!categoryId) {
+    if (!categoryId)
       return new NextResponse("Category Id is required", { status: 400 });
-    }
-    if (!colorId) {
+    if (!colorId)
       return new NextResponse("Color Id is required", { status: 400 });
-    }
-    if (!sizeId) {
+    if (!sizeId)
       return new NextResponse("Size Id is required", { status: 400 });
-    }  
-
-    if (!(await params).shopId) {
+    if (!shopId)
       return new NextResponse("Shop Id is required", { status: 400 });
-    }
 
     const shopByUserId = await prisma.shop.findFirst({
-      where: {
-        id: (await params).shopId, 
-        userId,
-      },
+      where: { id: shopId, userId },
     });
 
-    if (!shopByUserId) {
-      return new NextResponse("Unauthorized", { status: 403 });
-    }
+    if (!shopByUserId) return new NextResponse("Unauthorized", { status: 403 });
 
     const product = await prisma.product.create({
       data: {
@@ -68,14 +52,12 @@ export async function POST(
         categoryId,
         sizeId,
         colorId,
-        shopId: (await params).shopId, 
+        shopId,
         images: {
           createMany: {
-            data: [
-              ...images.map((image: {url: string}) => image)
-            ]
-          }
-        }
+            data: images.map((image: { url: string }) => image),
+          },
+        },
       },
     });
 
