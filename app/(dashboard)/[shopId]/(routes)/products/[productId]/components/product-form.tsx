@@ -164,14 +164,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   <ImageUpload
                     value={field.value.map((image) => image.url)}
                     disabled={loading}
-                    onChange={(url) =>
-                      field.onChange([...field.value, { url }])
-                    }
+                    onChange={(url) => {
+                      const current = form.getValues("images"); 
+                      field.onChange([...current, { url }]);
+                    }}
                     onRemove={(url) =>
-                      field.onChange([
-                        ...field.value.filter((current) => current.url !== url),
-                      ])
+                      field.onChange(
+                        field.value.filter((current) => current.url !== url),
+                      )
                     }
+                    maxFiles={10}
                   />
                 </FormControl>
                 <FormMessage />

@@ -10,6 +10,7 @@ interface ImageUploadProps {
   onChange: (value: string) => void;
   onRemove: (value: string) => void;
   value: string[];
+  maxFiles?: number;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -17,6 +18,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   onChange,
   onRemove,
   value,
+  maxFiles = 1, // ← default to 1 for billboard
 }) => {
   return (
     <div>
@@ -50,24 +52,31 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       <CldUploadWidget
         uploadPreset="instabiz"
         options={{
-          maxFiles: 1,
+          maxFiles,
+          multiple: maxFiles > 1, // ← enable multi-select for products
         }}
         onSuccess={(result) => {
           const info = result.info as { secure_url: string };
           onChange(info.secure_url);
         }}
       >
-        {({ open }) => (
-          <Button
-            type="button"
-            disabled={disabled}
-            variant="secondary"
-            onClick={() => open()}
-          >
-            <ImagePlus className="h-4 w-4 mr-2" />
-            Upload an Image
-          </Button>
-        )}
+        {({ open }) => {
+          const handleUpload = () => {
+            if (open) open();
+          };
+
+          return (
+            <Button
+              type="button"
+              disabled={disabled}
+              variant="secondary"
+              onClick={handleUpload}
+            >
+              <ImagePlus className="h-4 w-4 mr-2" />
+              {maxFiles === 1 ? "Upload an Image" : "Upload Images"}
+            </Button>
+          );
+        }}
       </CldUploadWidget>
     </div>
   );
