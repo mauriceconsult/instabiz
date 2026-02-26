@@ -43,6 +43,7 @@ export async function PATCH(
 ) {
   try {
     const { userId } = await auth();
+    const { shopId, productId } = await params; // ✅ top of try block
     const body = await req.json();
     const {
       name,
@@ -55,48 +56,26 @@ export async function PATCH(
       isArchived,
     } = body;
 
-    if (!userId) {
-      return new NextResponse("Unauthenticated", { status: 401 });
-    }
-
-    if (!name) {
-      return new NextResponse("Name is required", { status: 400 });
-    }
-    if (!images || !images.length) {
+    if (!userId) return new NextResponse("Unauthenticated", { status: 401 });
+    if (!name) return new NextResponse("Name is required", { status: 400 });
+    if (!images || !images.length)
       return new NextResponse("Images are required", { status: 400 });
-    }
-
-    if (!price) {
-      return new NextResponse("Price is required", { status: 400 });
-    }
-    if (!categoryId) {
+    if (price === undefined || price === null)
+      return new NextResponse("Price is required", { status: 400 }); // ✅ correct check
+    if (!categoryId)
       return new NextResponse("Category Id is required", { status: 400 });
-    }
-    if (!colorId) {
+    if (!colorId)
       return new NextResponse("Color Id is required", { status: 400 });
-    }
-    if (!sizeId) {
+    if (!sizeId)
       return new NextResponse("Size Id is required", { status: 400 });
-    }
-
-    if (!(await params).productId) {
+    if (!productId)
       return new NextResponse("Product Id is required", { status: 400 });
-    }
 
     const storeByUser = await prisma.shop.findFirst({
-      where: {
-        id: (await params).shopId,
-        userId,
-      },
+      where: { id: shopId, userId },
     });
-    if (!storeByUser) {
-      return new NextResponse("Unathorized", {
-        status: 403,
-      });
-    }
+    if (!storeByUser) return new NextResponse("Unauthorized", { status: 403 });
 
-    const { productId } = await params;
-   
     await prisma.product.update({
       where: { id: productId },
       data: {
