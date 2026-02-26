@@ -46,8 +46,9 @@ const formSchema = z.object({
 
 interface ProductFormProps {
   initialData:
-    | (Product & {
+    | (Omit<Product, "price"> & {
         images: Image[];
+        price: number;
       })
     | null;
   categories: Category[];

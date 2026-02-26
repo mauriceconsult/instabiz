@@ -20,7 +20,7 @@ export async function GET(
         category: true,
         size: true,
         color: true,
-      }
+      },
     });
 
     return NextResponse.json(product);
@@ -32,26 +32,28 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: {
+  {
+    params,
+  }: {
     params: Promise<{
       shopId: string;
-      productId: string
-    }>
+      productId: string;
+    }>;
   },
 ) {
   try {
     const { userId } = await auth();
     const body = await req.json();
-        const {
-          name,
-          price,
-          categoryId,
-          colorId,
-          sizeId,
-          images,
-          isFeatured,
-          isArchived,
-        } = body;
+    const {
+      name,
+      price,
+      categoryId,
+      colorId,
+      sizeId,
+      images,
+      isFeatured,
+      isArchived,
+    } = body;
 
     if (!userId) {
       return new NextResponse("Unauthenticated", { status: 401 });
@@ -79,12 +81,12 @@ export async function PATCH(
 
     if (!(await params).productId) {
       return new NextResponse("Product Id is required", { status: 400 });
-    } 
+    }
 
     const storeByUser = await prisma.shop.findFirst({
       where: {
         id: (await params).shopId,
-        userId
+        userId,
       },
     });
     if (!storeByUser) {
@@ -93,37 +95,33 @@ export async function PATCH(
       });
     }
 
+    const { productId } = await params;
+   
     await prisma.product.update({
-      where: {
-          id: (await params).productId
-        },
-        data: {
-          name,
-          price,         
-          categoryId,
-          sizeId,
-          colorId,        
-          images: {
-            deleteMany: { },
-          },
-          isFeatured,
-          isArchived,
-        },
-    });
-    const product = await prisma.product.update({
-      where: {
-        id: (await params).productId
-      },
+      where: { id: productId },
       data: {
+        name,
+        price,
+        categoryId,
+        sizeId,
+        colorId,
+        isFeatured,
+        isArchived,
         images: {
-          createMany: {
-            data: {
-              ...images.map((image: { url: string }) => image)
-            }
-          }
-        }
-      }
-    })
+          deleteMany: {},
+        },
+      },
+    });
+ const product = await prisma.product.update({
+   where: { id: productId },
+   data: {
+     images: {
+       createMany: {
+         data: images.map((image: { url: string }) => image), // ✅ array, not object
+       },
+     },
+   },
+ });
     return NextResponse.json(product);
   } catch (error) {
     console.log("PRODUCT_PATCH]", error);
@@ -133,7 +131,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ productId: string; shopId: string }> }, 
+  { params }: { params: Promise<{ productId: string; shopId: string }> },
 ) {
   try {
     const { userId } = await auth();

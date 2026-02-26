@@ -7,13 +7,17 @@ const ProductPage = async ({
     params: Promise<{ productId: string; shopId: string; }>;
 }) => {
   const product = await prisma.product.findUnique({
-    where: {
-      id: (await params).productId,
-    },
-    include: {
-      images: true,
-    }
+    where: { id: (await params).productId },
+    include: { images: true },
   });
+
+  // ✅ Convert Decimal to number before passing to client
+  const serializedProduct = product
+    ? {
+        ...product,
+        price: product.price.toNumber(),
+      }
+    : null;
   const categories = await prisma.category.findMany({
     where: {
       shopId: (await params).shopId,
@@ -33,10 +37,11 @@ const ProductPage = async ({
     <div className="flex-col">
       <div className="flex-1 space-y-4 p-8 pt-6">
         <ProductForm
+          initialData={serializedProduct}
           categories={categories}
           colors={colors}
           sizes={sizes}
-          initialData={product} />
+        />
       </div>
     </div>
   );

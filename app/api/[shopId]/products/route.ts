@@ -8,8 +8,7 @@ export async function POST(
 ) {
   try {
     const { userId } = await auth();
-    const { shopId } = await params; 
-
+    const { shopId } = await params;
     const body = await req.json();
     const {
       name,
@@ -78,7 +77,7 @@ export async function GET(
     const colorId = searchParams.get("colorId") || undefined;
     const sizeId = searchParams.get("sizeId") || undefined;
     const isFeatured = searchParams.get("isFeatured");
-    const { shopId } = await params; 
+    const { shopId } = await params;
 
     if (!shopId) {
       return new NextResponse("Shop Id is required", { status: 400 });
@@ -91,7 +90,7 @@ export async function GET(
         colorId,
         sizeId,
         isFeatured: isFeatured ? true : undefined,
-        isArchived: false
+        isArchived: false,
       },
       include: {
         images: true,
@@ -100,8 +99,8 @@ export async function GET(
         size: true,
       },
       orderBy: {
-        createdAt: "desc"
-      }
+        createdAt: "desc",
+      },
     });
 
     return NextResponse.json(products);
