@@ -116,16 +116,27 @@ model Image {
 }
 
 model Order {
-  id         String      @id @default(uuid())
-  shopId     String
-  shop       Shop        @relation("ShopToOrder", fields: [shopId], references: [id])
-  orderItems OrderItem[]
-  isPaid     Boolean     @default(false)
-  phone      String      @default("")
-  address    String      @default("")
+  id              String      @id @default(uuid())
+  shopId          String
+  shop            Shop        @relation("ShopToOrder", fields: [shopId], references: [id])
+  orderItems      OrderItem[]
+  isPaid          Boolean     @default(false)
+  phone           String      @default("")
+  address         String      @default("")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Payment
+  paymentMethod   String      @default("stripe") // "stripe" | "mobile_money"
+  paymentRef      String?     // stripe session id or momo referenceId
+  paymentStatus   String      @default("pending") // "pending" | "completed" | "failed"
+
+  // Delivery
+  deliveryMethod  String?     // "uber_direct" | "self_pickup" | "rider"
+  deliveryStatus  String      @default("pending") // "pending" | "dispatched" | "delivered"
+  deliveryRef     String?     // uber direct delivery id or rider momo referenceId
+  deliveryCost    Decimal?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([shopId])
 }

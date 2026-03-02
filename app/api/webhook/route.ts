@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { onPaymentConfirmed } from "@/lib/payment"; // ← add import
 import { stripe } from "@/lib/stripe";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
@@ -8,6 +8,7 @@ export async function POST(req: Request) {
   const body = await req.text();
   const signature = (await headers()).get("Stripe-signature") as string;
   let event: Stripe.Event;
+
   try {
     event = stripe.webhooks.constructEvent(
       body,
@@ -18,44 +19,13 @@ export async function POST(req: Request) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return new NextResponse(`Webhook error: ${message}`, { status: 400 });
   }
-  const session = event.data.object as Stripe.Checkout.Session;
-  const address = session?.customer_details?.address;
-  const addressComponents = [
-    address?.line1,
-    address?.line2,
-    address?.city,
-    address?.state,
-    address?.postal_code,
-    address?.country,
-  ];
-  const addressString = addressComponents.filter((c) => c !== null).join(", ");
-  if (event.type === "checkout.session.completed") {
-    const order = await prisma.order.update({
-      where: {
-        id: session?.metadata?.orderId ?? "",
-      },
-      data: {
-        isPaid: true,
-        address: addressString,
-        phone: session?.customer_details?.phone ?? "",
-      },
-      include: {
-        orderItems: true,
-      },
-    });
-    const productIds = order.orderItems.map((item) => item.productId);
-    await prisma.product.updateMany({
-      where: {
-        id: { in: productIds },
-      },
-      data: {
-        isArchived: true,
-      },
-    });
 
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const orderId = session?.metadata?.orderId ?? "";
+    await onPaymentConfirmed(orderId, session); // ← pass session for address/phone
     return NextResponse.json(null, { status: 200 });
   }
-  return NextResponse.json(null, { status: 200 }); // fallback
+
+  return NextResponse.json(null, { status: 200 });
 }
-        
-            
