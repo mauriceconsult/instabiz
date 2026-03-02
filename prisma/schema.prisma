@@ -17,6 +17,10 @@ model Shop {
   products   Product[]   @relation("ShopToProduct")
   orders     Order[]     @relation("ShopToOrder")
 
+  latitude  Float?
+  longitude Float?
+  address   String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -116,27 +120,27 @@ model Image {
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  shopId          String
-  shop            Shop        @relation("ShopToOrder", fields: [shopId], references: [id])
-  orderItems      OrderItem[]
-  isPaid          Boolean     @default(false)
-  phone           String      @default("")
-  address         String      @default("")
+  id         String      @id @default(uuid())
+  shopId     String
+  shop       Shop        @relation("ShopToOrder", fields: [shopId], references: [id])
+  orderItems OrderItem[]
+  isPaid     Boolean     @default(false)
+  phone      String      @default("")
+  address    String      @default("")
 
   // Payment
-  paymentMethod   String      @default("stripe") // "stripe" | "mobile_money"
-  paymentRef      String?     // stripe session id or momo referenceId
-  paymentStatus   String      @default("pending") // "pending" | "completed" | "failed"
+  paymentMethod String  @default("stripe") // "stripe" | "mobile_money"
+  paymentRef    String? // stripe session id or momo referenceId
+  paymentStatus String  @default("pending") // "pending" | "completed" | "failed"
 
   // Delivery
-  deliveryMethod  String?     // "uber_direct" | "self_pickup" | "rider"
-  deliveryStatus  String      @default("pending") // "pending" | "dispatched" | "delivered"
-  deliveryRef     String?     // uber direct delivery id or rider momo referenceId
-  deliveryCost    Decimal?
+  deliveryMethod String? // "uber_direct" | "self_pickup" | "rider"
+  deliveryStatus String   @default("pending") // "pending" | "dispatched" | "delivered"
+  deliveryRef    String? // uber direct delivery id or rider momo referenceId
+  deliveryCost   Decimal?
 
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([shopId])
 }

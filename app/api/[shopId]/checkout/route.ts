@@ -15,7 +15,8 @@ export async function POST(
   req: Request,
   { params }: { params: { shopId: string } },
 ) {
-  const { productIds } = await req.json();
+  const { productIds, deliveryMethod, deliveryCost, deliveryAddress, phone } =
+    await req.json();
   if (!productIds || productIds.length === 0) {
     return new NextResponse("Product Ids are required.", { status: 400 });
   }
@@ -26,9 +27,8 @@ export async function POST(
       },
     },
   });
-  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-  products.forEach((product) => {
-    line_items.push({
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+    ...products.map((product) => ({
       quantity: 1,
       price_data: {
         currency: "USD",
@@ -37,20 +37,30 @@ export async function POST(
         },
         unit_amount: product.price.toNumber() * 100,
       },
-    });
-  });
+    })),
+    ...(deliveryCost > 0
+      ? [
+          {
+            quantity: 1,
+            price_data: {
+              currency: "USD",
+              product_data: { name: `Delivery - ${deliveryMethod}` },
+              unit_amount: Math.round(deliveryCost * 100),
+            },
+          },
+        ]
+      : []),
+  ];
   const order = await prisma.order.create({
     data: {
       shopId: params.shopId,
-      isPaid: false,
+      phone,
+      address: deliveryAddress,
+      paymentMethod: "stripe",
+      deliveryMethod,
+      deliveryCost,
       orderItems: {
-        create: productIds.map((productId: string) => ({
-          product: {
-            connect: {
-              id: productId,
-            },
-          },
-        })),
+        create: productIds.map((productId: string) => ({ productId })),
       },
     },
   });

@@ -1,7 +1,7 @@
 // lib/payment.ts
-import { Order } from "@prisma/client";
 import { prisma } from "./prisma";
 import Stripe from "stripe";
+import axios from "axios";
 
 export async function onPaymentConfirmed(
   orderId: string,
@@ -19,7 +19,7 @@ export async function onPaymentConfirmed(
     .filter(Boolean)
     .join(", ");
 
-  const order = await prisma.order.update({
+  const order = (await prisma.order.update({
     where: { id: orderId },
     data: {
       isPaid: true,
@@ -30,7 +30,14 @@ export async function onPaymentConfirmed(
       }),
     },
     include: { orderItems: true },
-  });
+  })) as unknown as {
+    id: string;
+    deliveryMethod: string | null;
+    deliveryQuoteId: string | null;
+    address: string;
+    phone: string;
+    orderItems: { id: string; productId: string; orderId: string }[];
+  };
 
   const productIds = order.orderItems.map((item) => item.productId);
   await prisma.product.updateMany({
@@ -39,16 +46,45 @@ export async function onPaymentConfirmed(
   });
 
   if (order.address) {
-    await dispatchDelivery(order);
+    await dispatchDelivery(order, process.env.SHOP_ADDRESS || "");
   }
 
   return order;
 }
 
-async function dispatchDelivery(order: Order) {
-  // For now a stub — plug in Uber Direct or MoMo disbursement here
-  await prisma.order.update({
-    where: { id: order.id },
-    data: { deliveryStatus: "dispatched" },
-  });
+// In onPaymentConfirmed → dispatchDelivery
+async function dispatchDelivery(
+  order: {
+    id: string;
+    deliveryMethod: string | null;
+    deliveryQuoteId: string | null; // ← add to Order model
+    address: string;
+    phone: string;
+  },
+  shopAddress: string,
+) {
+  if (order.deliveryMethod === "uber_direct" && order.deliveryQuoteId) {
+    const delivery = await axios.post(
+      "https://api.uber.com/v1/customers/{customer_id}/deliveries",
+      {
+        quote_id: order.deliveryQuoteId, // locks in the quoted price
+        pickup_address: shopAddress,
+        dropoff_address: order.address,
+        dropoff_phone_number: order.phone,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.UBER_DIRECT_TOKEN}`,
+        },
+      },
+    );
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        deliveryRef: delivery.data.id,
+        deliveryStatus: "dispatched",
+      },
+    });
+  }
 }
