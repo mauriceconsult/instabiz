@@ -5,7 +5,7 @@ import axios from "axios";
 
 export async function onPaymentConfirmed(
   orderId: string,
-  session?: Stripe.Checkout.Session, 
+  session?: Stripe.Checkout.Session,
 ) {
   const address = session?.customer_details?.address;
   const addressString = [
@@ -29,9 +29,19 @@ export async function onPaymentConfirmed(
         phone: session.customer_details.phone,
       }),
     },
-    include: { orderItems: true },
+    include: {
+      orderItems: true,
+      shop: true, // ← include shop to get its address
+    },
   })) as unknown as {
     id: string;
+    shopId: string;
+    shop: {
+      id: string;
+      address: string | null;
+      latitude: number | null;
+      longitude: number | null;
+    };
     deliveryMethod: string | null;
     deliveryQuoteId: string | null;
     address: string;
@@ -45,8 +55,8 @@ export async function onPaymentConfirmed(
     data: { isArchived: true },
   });
 
-  if (order.address) {
-    await dispatchDelivery(order, process.env.SHOP_ADDRESS || "");
+  if (order.address && order.shop.address) {
+    await dispatchDelivery(order, order.shop); // ← pass shop, not env var
   }
 
   return order;
@@ -57,18 +67,24 @@ async function dispatchDelivery(
   order: {
     id: string;
     deliveryMethod: string | null;
-    deliveryQuoteId: string | null; // ← add to Order model
+    deliveryQuoteId: string | null;
     address: string;
     phone: string;
   },
-  shopAddress: string,
+  shop: {
+    address: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  },
 ) {
   if (order.deliveryMethod === "uber_direct" && order.deliveryQuoteId) {
     const delivery = await axios.post(
       "https://api.uber.com/v1/customers/{customer_id}/deliveries",
       {
-        quote_id: order.deliveryQuoteId, // locks in the quoted price
-        pickup_address: shopAddress,
+        quote_id: order.deliveryQuoteId,
+        pickup_address: shop.address, // ← from DB
+        pickup_latitude: shop.latitude, // ← from DB
+        pickup_longitude: shop.longitude, // ← from DB
         dropoff_address: order.address,
         dropoff_phone_number: order.phone,
       },
