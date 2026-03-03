@@ -13,28 +13,27 @@ export async function OPTIONS() {
 }
 export async function POST(
   req: Request,
-  { params }: { params: { shopId: string } },
+  { params }: { params: Promise<{ shopId: string }> }, // ← Promise
 ) {
+  const { shopId } = await params; // ← await it
+
   const { productIds, deliveryMethod, deliveryCost, deliveryAddress, phone } =
     await req.json();
+
   if (!productIds || productIds.length === 0) {
     return new NextResponse("Product Ids are required.", { status: 400 });
   }
+
   const products = await prisma.product.findMany({
-    where: {
-      id: {
-        in: productIds,
-      },
-    },
+    where: { id: { in: productIds } },
   });
+
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
     ...products.map((product) => ({
       quantity: 1,
       price_data: {
         currency: "USD",
-        product_data: {
-          name: product.name,
-        },
+        product_data: { name: product.name },
         unit_amount: product.price.toNumber() * 100,
       },
     })),
@@ -51,9 +50,10 @@ export async function POST(
         ]
       : []),
   ];
+
   const order = await prisma.order.create({
     data: {
-      shopId: params.shopId,
+      shopId, // ← use destructured value
       phone,
       address: deliveryAddress,
       paymentMethod: "stripe",
@@ -64,23 +64,16 @@ export async function POST(
       },
     },
   });
+
   const session = await stripe.checkout.sessions.create({
     line_items,
     mode: "payment",
     billing_address_collection: "required",
-    phone_number_collection: {
-      enabled: true,
-    },
-    success_url: `${process.env.FRONTEND_STORE_URL}/cart?sucess=1`,
+    phone_number_collection: { enabled: true },
+    success_url: `${process.env.FRONTEND_STORE_URL}/cart?success=1`, // ← fixed typo "sucess"
     cancel_url: `${process.env.FRONTEND_STORE_URL}/cart?cancel=1`,
-    metadata: {
-      orderId: order.id,
-    },
+    metadata: { orderId: order.id },
   });
-  return NextResponse.json(
-    { url: session.url },
-    {
-      headers: corsHeaders,
-    },
-  );
+
+  return NextResponse.json({ url: session.url }, { headers: corsHeaders });
 }
