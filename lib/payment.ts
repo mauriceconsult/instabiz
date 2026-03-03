@@ -5,7 +5,7 @@ import axios from "axios";
 
 export async function onPaymentConfirmed(
   orderId: string,
-  session?: Stripe.Checkout.Session, // ← add this
+  session?: Stripe.Checkout.Session, 
 ) {
   const address = session?.customer_details?.address;
   const addressString = [
