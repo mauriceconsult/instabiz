@@ -23,7 +23,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import * as z from "zod";
-import { useOrigin } from "@/hooks/use-origin"; 
+import { useOrigin } from "@/hooks/use-origin";
 
 interface SettingsFormProps {
   initialData: Shop;
@@ -36,6 +36,9 @@ const ApiAlert = dynamic(
 
 const formSchema = z.object({
   name: z.string().min(1).max(255),
+  address: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof formSchema>;
@@ -43,13 +46,18 @@ type SettingsFormValues = z.infer<typeof formSchema>;
 export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
   const params = useParams();
   const router = useRouter();
-  const origin = useOrigin(); 
+  const origin = useOrigin();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData,
+    defaultValues: {
+      name: initialData.name,
+      address: initialData.address ?? "",
+      latitude: initialData.latitude ?? undefined,
+      longitude: initialData.longitude ?? undefined,
+    },
   });
 
   const onSubmit = async (data: SettingsFormValues) => {
@@ -117,6 +125,63 @@ export const SettingsForm: React.FC<SettingsFormProps> = ({ initialData }) => {
                       disabled={loading}
                       placeholder="Shop name"
                       {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Shop Address</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="123 Main St, Kampala, Uganda"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="latitude"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Latitude</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="any"
+                      disabled={loading}
+                      placeholder="0.3476"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="longitude"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Longitude</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="any"
+                      disabled={loading}
+                      placeholder="32.5825"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
                     />
                   </FormControl>
                   <FormMessage />
