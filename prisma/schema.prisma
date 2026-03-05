@@ -10,6 +10,9 @@ model Shop {
   id         String      @id @default(uuid())
   userId     String
   name       String
+  country    String      @default("UG")
+  currency   String      @default("UGX")
+  momoPhone  String?
   billboards Billboard[] @relation("ShopToBillboard")
   categories Category[]  @relation("ShopToCategory")
   sizes      Size[]      @relation("ShopToSize")
@@ -127,6 +130,9 @@ model Order {
   isPaid     Boolean     @default(false)
   phone      String      @default("")
   address    String      @default("")
+
+  platformFee Decimal?
+  shopPayout  Decimal?
 
   // Payment
   paymentMethod String  @default("stripe") // "stripe" | "mobile_money"
