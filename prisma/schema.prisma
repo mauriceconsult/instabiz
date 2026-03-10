@@ -13,6 +13,7 @@ model Shop {
   country    String      @default("UG")
   currency   String      @default("UGX")
   momoPhone  String?
+  phone      String?
   billboards Billboard[] @relation("ShopToBillboard")
   categories Category[]  @relation("ShopToCategory")
   sizes      Size[]      @relation("ShopToSize")
@@ -140,10 +141,13 @@ model Order {
   paymentStatus String  @default("pending") // "pending" | "completed" | "failed"
 
   // Delivery
-  deliveryMethod String? // "uber_direct" | "self_pickup" | "rider"
-  deliveryStatus String   @default("pending") // "pending" | "dispatched" | "delivered"
-  deliveryRef    String? // uber direct delivery id or rider momo referenceId
-  deliveryCost   Decimal?
+  deliveryMethod      String? // "uber_direct" | "self_pickup" | "rider"
+  deliveryQuoteId     String?
+  deliveryStatus      String   @default("pending") // "pending" | "dispatched" | "delivered"
+  deliveryRef         String? // uber direct delivery id or rider momo referenceId
+  deliveryCost        Decimal?
+  deliveryProvider    String? // "uber_direct" | "glovo" | "flat_rate" etc.
+  deliveryTrackingUrl String? // for customer tracking
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

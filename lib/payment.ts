@@ -1,12 +1,26 @@
 // lib/payment.ts
 import { prisma } from "./prisma";
+import { dispatchDelivery } from "./delivery-provider";
+import { calculateFees } from "./platform";
+import { momo } from "./momo";
 import Stripe from "stripe";
-import axios from "axios";
+import { geocodeAddress } from "./geo-code";
+import { Prisma } from "@prisma/client";
+
+type OrderWithShopAndItems = Prisma.OrderGetPayload<{
+  include: {
+    shop: true;
+    orderItems: {
+      include: { product: true };
+    };
+  };
+}>;
 
 export async function onPaymentConfirmed(
   orderId: string,
   session?: Stripe.Checkout.Session,
 ) {
+  // Build address string from Stripe session if available
   const address = session?.customer_details?.address;
   const addressString = [
     address?.line1,
@@ -19,7 +33,8 @@ export async function onPaymentConfirmed(
     .filter(Boolean)
     .join(", ");
 
-  const order = (await prisma.order.update({
+  // Update order as paid
+  const order = await prisma.order.update({
     where: { id: orderId },
     data: {
       isPaid: true,
@@ -30,77 +45,133 @@ export async function onPaymentConfirmed(
       }),
     },
     include: {
-      orderItems: true,
-      shop: true, // ← include shop to get its address
+      orderItems: {
+        include: { product: true },
+      },
+      shop: true,
     },
-  })) as unknown as {
-    id: string;
-    shopId: string;
-    shop: {
-      id: string;
-      address: string | null;
-      latitude: number | null;
-      longitude: number | null;
-    };
-    deliveryMethod: string | null;
-    deliveryQuoteId: string | null;
-    address: string;
-    phone: string;
-    orderItems: { id: string; productId: string; orderId: string }[];
-  };
+  });
 
+  // Archive sold products
   const productIds = order.orderItems.map((item) => item.productId);
   await prisma.product.updateMany({
     where: { id: { in: productIds } },
     data: { isArchived: true },
   });
 
-  if (order.address && order.shop.address) {
-    await dispatchDelivery(order, order.shop); // ← pass shop, not env var
+  // Calculate payout
+  const subtotal = order.orderItems.reduce(
+    (sum, item) => sum + item.product.price.toNumber(),
+    0,
+  );
+  const { platformFee } = calculateFees(
+    subtotal,
+    Number(order.deliveryCost ?? 0),
+  );
+  const shopPayout = subtotal - platformFee;
+
+  // Store payout amount
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { shopPayout },
+  });
+
+  // Disburse to shop via MoMo if payment was mobile money
+  if (
+    order.paymentMethod === "mobile_money" &&
+    order.shop.momoPhone
+  ) {
+    await disburseToShop({
+      shopPhone: order.shop.momoPhone,
+      amount: shopPayout,
+      currency: order.shop.currency ?? "UGX",
+      orderId: order.id,
+    });
+  }
+
+  // Dispatch delivery if address exists
+  if (order.address && order.deliveryMethod !== "pickup") {
+    await handleDispatch(order);
   }
 
   return order;
 }
 
-// In onPaymentConfirmed → dispatchDelivery
-async function dispatchDelivery(
-  order: {
-    id: string;
-    deliveryMethod: string | null;
-    deliveryQuoteId: string | null;
-    address: string;
-    phone: string;
-  },
-  shop: {
-    address: string | null;
-    latitude: number | null;
-    longitude: number | null;
-  },
-) {
-  if (order.deliveryMethod === "uber_direct" && order.deliveryQuoteId) {
-    const delivery = await axios.post(
-      "https://api.uber.com/v1/customers/{customer_id}/deliveries",
-      {
-        quote_id: order.deliveryQuoteId,
-        pickup_address: shop.address, // ← from DB
-        pickup_latitude: shop.latitude, // ← from DB
-        pickup_longitude: shop.longitude, // ← from DB
-        dropoff_address: order.address,
-        dropoff_phone_number: order.phone,
+// ─── Disburse to shop ────────────────────────────────────────────
+
+async function disburseToShop({
+  shopPhone,
+  amount,
+  currency,
+  orderId,
+}: {
+  shopPhone: string;
+  amount: number;
+  currency: string;
+  orderId: string;
+}) {
+  try {
+    const referenceId = await momo.disbursements.transfer({
+      amount: String(Math.round(amount)),
+      currency,
+      externalId: orderId,
+      payee: {
+        partyIdType: "MSISDN",
+        partyId: shopPhone,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.UBER_DIRECT_TOKEN}`,
-        },
-      },
-    );
+      payerMessage: "Shop payout for order",
+      payeeNote: `Order ${orderId} payout`,
+    });
+
+    const status =
+      await momo.disbursements.getTransactionStatus(referenceId);
+    console.log(`[DISBURSE] Status: ${status.status}`);
+  } catch (error) {
+    // Never fail the order over a disbursement error
+    console.error("[DISBURSE_ERROR]", error);
+  }
+}
+
+// ─── Dispatch delivery ───────────────────────────────────────────
+
+async function handleDispatch(order: OrderWithShopAndItems) {
+  if (!order.shop.address || !order.shop.latitude || !order.shop.longitude) {
+    console.error("[DISPATCH] Shop location not configured — skipping");
+    return;
+  }
+
+  try {
+    const geo = await geocodeAddress(order.address);
+
+    const result = await dispatchDelivery({
+      quoteId: order.deliveryQuoteId ?? "",
+      pickupAddress: order.shop.address,
+      pickupLat: order.shop.latitude,
+      pickupLng: order.shop.longitude,
+      pickupName: order.shop.name,
+      pickupPhone: order.shop.phone ?? "",
+      dropoffAddress: order.address,
+      dropoffLat: geo.lat,
+      dropoffLng: geo.lng,
+      dropoffName: "Customer",
+      dropoffPhone: order.phone,
+      orderId: order.id,
+    });
 
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        deliveryRef: delivery.data.id,
+        deliveryRef: result.deliveryId,
         deliveryStatus: "dispatched",
+        deliveryProvider: result.provider,
+        ...(result.trackingUrl && {
+          deliveryTrackingUrl: result.trackingUrl,
+        }),
       },
     });
+  } catch (error) {
+    console.error("[DISPATCH_ERROR]", error);
   }
 }
+
+    
