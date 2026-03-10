@@ -12,7 +12,7 @@ const createPrismaClient = () =>
     }),
     log:
       process.env.NODE_ENV === "development"
-        ? ["error", "warn"] // ✅ Removed 'query' to reduce console noise
+        ? ["error", "warn"] 
         : ["error"],
   });
 
