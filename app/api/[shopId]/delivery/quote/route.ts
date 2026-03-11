@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getDeliveryQuote } from "@/lib/delivery-provider";
 import { geocodeAddress } from "@/lib/geo-code";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ shopId: string }> },

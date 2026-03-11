@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { onPaymentConfirmed } from "@/lib/payment";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const referenceId = searchParams.get("referenceId");

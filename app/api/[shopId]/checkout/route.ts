@@ -4,6 +4,8 @@ import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
 import { calculateFees } from "@/lib/platform";
 
+export const dynamic = "force-dynamic";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
