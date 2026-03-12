@@ -20,10 +20,24 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ shopId: string }> },
 ) {
-  const { shopId } = await params; // ← await and destructure first
+  const { shopId } = await params;
 
-  const { productIds, deliveryMethod, deliveryCost, deliveryAddress, phone } =
-    await req.json();
+  // Guard: Stripe available
+  if (!stripe) {
+    return new NextResponse(
+      "Card payments are not available yet. Please use Mobile Money.",
+      { status: 503 },
+    );
+  }
+
+  const {
+    productIds,
+    deliveryMethod,
+    deliveryCost,
+    deliveryAddress,
+    deliveryQuoteId, // ← added
+    phone,
+  } = await req.json();
 
   if (!productIds || productIds.length === 0) {
     return new NextResponse("Product Ids are required.", { status: 400 });
@@ -34,38 +48,47 @@ export async function POST(
     where: { id: shopId },
   });
 
-  const currency = (shop?.currency ?? "USD").toLowerCase(); // ← one currency for all items
+  if (!shop) {
+    return new NextResponse("Shop not found.", { status: 404 });
+  }
+
+  const currency = (shop.currency ?? "USD").toLowerCase();
+  const safeDeliveryCost = Number(deliveryCost ?? 0);
 
   const products = await prisma.product.findMany({
     where: { id: { in: productIds } },
   });
+
+  if (products.length === 0) {
+    return new NextResponse("No valid products found.", { status: 404 });
+  }
 
   const subtotal = products.reduce(
     (sum, product) => sum + product.price.toNumber(),
     0,
   );
 
-  const { platformFee } = calculateFees(subtotal, deliveryCost);
+  const { platformFee } = calculateFees(subtotal, safeDeliveryCost);
 
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
     // Products
     ...products.map((product) => ({
       quantity: 1,
       price_data: {
-        currency, // ← shop currency
+        currency,
         product_data: { name: product.name },
         unit_amount: Math.round(product.price.toNumber() * 100),
       },
     })),
     // Delivery
-    ...(deliveryCost > 0
+    ...(safeDeliveryCost > 0
       ? [
           {
             quantity: 1,
             price_data: {
-              currency, // ← same currency
+              currency,
               product_data: { name: `Delivery - ${deliveryMethod}` },
-              unit_amount: Math.round(deliveryCost * 100),
+              unit_amount: Math.round(safeDeliveryCost * 100),
             },
           },
         ]
@@ -74,7 +97,7 @@ export async function POST(
     {
       quantity: 1,
       price_data: {
-        currency, // ← same currency
+        currency,
         product_data: { name: "Platform Fee (10%)" },
         unit_amount: Math.round(platformFee * 100),
       },
@@ -88,7 +111,8 @@ export async function POST(
       address: deliveryAddress,
       paymentMethod: "stripe",
       deliveryMethod,
-      deliveryCost,
+      deliveryCost: safeDeliveryCost,
+      deliveryQuoteId, // ← added
       platformFee,
       orderItems: {
         create: productIds.map((productId: string) => ({ productId })),
