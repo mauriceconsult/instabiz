@@ -115,38 +115,83 @@ export const ColorForm: React.FC<ColorFormProps> = ({ initialData }) => {
           <div className="grid grid-cols-3 gap-8">
             <FormField
               control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Label</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="Color name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="value"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Value</FormLabel>
+                  <FormLabel>Color</FormLabel>
                   <FormControl>
-                    <div className="flex items-center gap-x-4">
+                    <div className="flex flex-col gap-y-3">
+                      {/* Visual color picker */}
+                      <div className="flex items-center gap-x-4">
+                        <input
+                          type="color"
+                          value={field.value || "#000000"}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          className="h-10 w-16 cursor-pointer rounded-md border border-gray-300 p-1"
+                        />
+                        <div
+                          className="h-10 w-10 rounded-full border border-gray-300 shadow-sm"
+                          style={{ backgroundColor: field.value || "#000000" }}
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {field.value || "#000000"}
+                        </span>
+                      </div>
+
+                      {/* Manual hex input */}
                       <Input
-                        disabled={loading}
-                        placeholder="Color value"
+                        placeholder="#000000"
                         {...field}
+                        onChange={(e) => {
+                          // Auto-add # if missing
+                          const val = e.target.value;
+                          field.onChange(val.startsWith("#") ? val : `#${val}`);
+                        }}
                       />
-                      <div
-                        className="border p-4 rounded-full"
-                        style={{backgroundColor: field.value}}
-                      />
+
+                      {/* Common color presets */}
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Quick select:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { name: "Black", hex: "#000000" },
+                            { name: "White", hex: "#FFFFFF" },
+                            { name: "Red", hex: "#EF4444" },
+                            { name: "Blue", hex: "#3B82F6" },
+                            { name: "Green", hex: "#22C55E" },
+                            { name: "Yellow", hex: "#EAB308" },
+                            { name: "Purple", hex: "#A855F7" },
+                            { name: "Pink", hex: "#EC4899" },
+                            { name: "Orange", hex: "#F97316" },
+                            { name: "Gray", hex: "#6B7280" },
+                            { name: "Brown", hex: "#92400E" },
+                            { name: "Navy", hex: "#1E3A5F" },
+                          ].map((color) => (
+                            <button
+                              key={color.hex}
+                              type="button"
+                              title={color.name}
+                              onClick={() => field.onChange(color.hex)}
+                              className="flex flex-col items-center gap-y-1 group"
+                            >
+                              <div
+                                className={`h-7 w-7 rounded-full border-2 shadow-sm transition
+                      ${
+                        field.value === color.hex
+                          ? "border-black scale-110"
+                          : "border-gray-300 hover:border-gray-500"
+                      }`}
+                                style={{ backgroundColor: color.hex }}
+                              />
+                              <span className="text-xs text-muted-foreground group-hover:text-black">
+                                {color.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </FormControl>
                   <FormMessage />
