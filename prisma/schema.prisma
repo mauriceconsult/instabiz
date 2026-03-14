@@ -21,6 +21,7 @@ model Shop {
   colors     Color[]     @relation("ShopToColor")
   products   Product[]   @relation("ShopToProduct")
   orders     Order[]     @relation("ShopToOrder")
+  refundRequests RefundRequest[] @relation("ShopToRefundRequest")
 
   latitude  Float?
   longitude Float?
@@ -136,6 +137,9 @@ model Order {
   platformFee Decimal?
   shopPayout  Decimal?
 
+  deliveredAt     DateTime?
+  refundRequest   RefundRequest?
+
   // Payment
   paymentMethod String  @default("stripe") // "stripe" | "mobile_money"
   paymentRef    String? // stripe session id or momo referenceId
@@ -154,6 +158,28 @@ model Order {
   updatedAt DateTime @updatedAt
 
   @@index([shopId])
+}
+model RefundRequest {
+  id              String   @id @default(uuid())
+  orderId         String   @unique
+  order           Order    @relation(fields: [orderId], references: [id])
+  shopId          String
+  shop            Shop     @relation("ShopToRefundRequest", fields: [shopId], references: [id])
+  buyerPhone      String
+  buyerEmail      String?
+  reason          String
+  evidence        String[] // Cloudinary image URLs
+  status          String   @default("pending")
+  // pending → under_review → approved → rejected → refunded
+  sellerResponse  String?
+  adminNotes      String?
+  requestedAt     DateTime @default(now())
+  resolvedAt      DateTime?
+  refundedAt      DateTime?
+  expiresAt       DateTime // requestedAt + 48 hours
+  
+  @@index([shopId])
+  @@index([status])
 }
 
 model OrderItem {

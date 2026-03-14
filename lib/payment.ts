@@ -158,6 +158,7 @@ async function handleDispatch(order: OrderWithShopAndItems) {
       orderId: order.id,
     });
 
+    // lib/payment.ts — update handleDispatch
     await prisma.order.update({
       where: { id: order.id },
       data: {

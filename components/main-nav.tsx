@@ -53,6 +53,11 @@ export function MainNav({
       active: pathname === `/${params.shopId}/orders`,
     },
     {
+      href: `/${params.shopId}/refunds`,
+      label: "Refunds",
+      active: pathname === `/${params.shopId}/refunds`,
+    },
+    {
       href: `/${params.shopId}/settings`,
       label: "Settings",
       active: pathname === `/${params.shopId}/settings`,
