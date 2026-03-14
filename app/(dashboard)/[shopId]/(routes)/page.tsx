@@ -6,19 +6,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heading } from "@/components/ui/heading";
 import { Overview } from "@/components/ui/overview";
 import { Separator } from "@/components/ui/separator";
-import { formatter } from "@/lib/utils";
-import { CreditCard, DollarSign, Package } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { CreditCard, Package } from "lucide-react";
 
 interface DashboardPageProps {
   params: Promise<{ shopId: string }>;
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = async ({ params }) => {
-  const { shopId } = await params; 
-   const totalRevenue = await getTotalRevenue(shopId);
-   const salesCount = await getSalesCount(shopId);
-   const stockCount = await getStockCount(shopId);
-   const graphRevenue = await getGraphRevenue(shopId);;
+  const { shopId } = await params;
+
+  const [totalRevenue, salesCount, stockCount, graphRevenue, shop] =
+    await Promise.all([
+      getTotalRevenue(shopId),
+      getSalesCount(shopId),
+      getStockCount(shopId),
+      getGraphRevenue(shopId),
+      prisma.shop.findUnique({
+        where: { id: shopId },
+        select: { currency: true, country: true },
+      }),
+    ]);
+
+  // Dynamic formatter based on shop currency
+  const currency = shop?.currency ?? "UGX";
+  const locale =
+    currency === "UGX"
+      ? "en-UG"
+      : currency === "KES"
+        ? "en-KE"
+        : currency === "GBP"
+          ? "en-GB"
+          : "en-US";
+
+  const formatter = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+  });
 
   return (
     <div className="flex-col">
@@ -31,7 +55,10 @@ const DashboardPage: React.FC<DashboardPageProps> = async ({ params }) => {
               <CardTitle className="font-medium text-sm">
                 Total Revenue
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              {/* Dynamic currency symbol in icon area */}
+              <span className="text-xs font-bold text-muted-foreground">
+                {currency}
+              </span>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
