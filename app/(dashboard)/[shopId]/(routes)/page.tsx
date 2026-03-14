@@ -92,7 +92,7 @@ const DashboardPage: React.FC<DashboardPageProps> = async ({ params }) => {
             <CardTitle className="font-medium text-sm">Overview</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <Overview data={graphRevenue} />
+            <Overview data={graphRevenue} currency={currency} />
           </CardContent>
         </Card>
       </div>
